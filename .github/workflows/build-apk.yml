@@ -43,6 +43,13 @@ jobs:
         run: |
           npx cap sync android
 
+      - name: Ensure Gradle Wrapper Jar
+        run: |
+          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
+            mkdir -p android/gradle/wrapper
+            curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o android/gradle/wrapper/gradle-wrapper.jar
+          fi
+
       - name: Grant Execute Permission for Gradlew
         run: |
           chmod +x android/gradlew
