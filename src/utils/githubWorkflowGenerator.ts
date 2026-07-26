@@ -45,35 +45,44 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Configure Webview APK Settings
-        run: |
-          echo "Building APK for ${config.appName || 'Web App'}"
-          echo "Web App URL: ${config.webAppUrl || 'https://example.com'}"
-          echo "Package ID: ${config.packageName || 'com.example.app'}"
-          echo "Version: ${config.versionName || '1.0.0'} (${config.versionCode || 1})"
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Generate Android Manifest & Gradle Config
+      - name: Install Dependencies & Build Web App
         run: |
-          mkdir -p android/app/src/main
+          npm ci || npm install
+          npm run build
+
+      - name: Sync Capacitor Android Wrapper
+        run: |
+          npx cap sync android
+
+      - name: Configure Android Manifest & Package Metadata
+        run: |
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="${config.packageName || 'com.company.app'}">
+              package="${config.packageName || 'com.example.app'}">
 
               ${permissionsList.map(p => `<uses-permission android:name="${p}" />`).join('\n              ')}
 
               <application
                   android:allowBackup="true"
                   android:icon="@mipmap/ic_launcher"
-                  android:label="${config.appName || 'Web App'}"
+                  android:label="${config.appName || 'APK Builder App'}"
                   android:roundIcon="@mipmap/ic_launcher_round"
                   android:supportsRtl="true"
-                  android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                  android:usesCleartextTraffic="true"
+                  android:theme="@style/AppTheme">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
                       android:screenOrientation="${config.orientation}"
-                      android:configChanges="orientation|keyboardHidden|screenSize">
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|xmlns|uiMode|screenLayout|smallestScreenSize"
+                      android:theme="@style/AppTheme.NoActionBarLaunch">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
@@ -83,12 +92,11 @@ jobs:
           </manifest>
           EOF
 
-      - name: Build Debug APK
+      - name: Build Android APK with Gradle
         run: |
           cd android
-          chmod +x gradlew || true
-          # Simulating Gradle build command:
-          # ./gradlew assembleDebug
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
