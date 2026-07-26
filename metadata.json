@@ -1,0 +1,6 @@
+{
+  "name": "APK Builder",
+  "description": "Convert your hosted web app into an Android APK.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
