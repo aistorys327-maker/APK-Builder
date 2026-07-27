@@ -5,63 +5,45 @@ on:
     branches:
       - main
       - master
-  repository_dispatch:
-    types: [build-apk]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
-          cache: 'gradle'
 
-      - name: Set up Node.js 22
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
 
       - name: Install Dependencies
-        run: |
-          npm ci || npm install
+        run: npm install
 
-      - name: Build Web Application
-        run: |
-          npm run build
+      - name: Build Web App
+        run: npm run build
 
-      - name: Sync Capacitor Android
-        run: |
-          npx cap sync android
+      - name: Sync Capacitor
+        run: npx cap sync android
 
-      - name: Ensure Gradle Wrapper Jar
-        run: |
-          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
-            mkdir -p android/gradle/wrapper
-            curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o android/gradle/wrapper/gradle-wrapper.jar
-          fi
+      - name: Make Gradle Executable
+        run: chmod +x android/gradlew
 
-      - name: Grant Execute Permission for Gradlew
-        run: |
-          chmod +x android/gradlew
+      - name: Build APK
+        working-directory: android
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: Build Android APK with Gradle
-        run: |
-          cd android
-          ./gradlew assembleDebug --stacktrace
-
-      - name: Upload Android APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
-          retention-days: 14
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
